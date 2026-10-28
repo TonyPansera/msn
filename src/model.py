@@ -138,7 +138,8 @@ def order_parameter() -> float:
     N_beta_Cu = np.count_nonzero(sous_reseau[1::2] == CU)
     return (N_alpha_Cu - N_beta_Cu) / (N_alpha_Cu + N_beta_Cu)
 
-def metropolis(n_until_eq: int, n_after_eq: int, T: float) -> tuple[float, float, float, float]:
+# Returns the measured series (E, |eta|, alpha_1, alpha_2), one value every measure_every steps after equilibrium
+def metropolis(n_until_eq: int, n_after_eq: int, T: float, measure_every: int = 1) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     init_at_t0()
     alpha_1 = []
     alpha_2 = []
@@ -153,13 +154,13 @@ def metropolis(n_until_eq: int, n_after_eq: int, T: float) -> tuple[float, float
         is_flipped = flipping_action(P, i, j)
         if is_flipped:
             E = E_after
-        if n > n_until_eq:
+        if n >= n_until_eq and (n - n_until_eq) % measure_every == 0:
             a_1, a_2 = cowley()
             energies.append(E)
             eta.append(abs(order_parameter()))
             alpha_1.append(a_1)
             alpha_2.append(a_2)
-    return np.mean(energies), np.mean(eta), np.mean(alpha_1), np.mean(alpha_2)
+    return np.array(energies), np.array(eta), np.array(alpha_1), np.array(alpha_2)
 
 
 def metropolis_before_eq(n: int, T: float) -> list[float]:

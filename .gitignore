@@ -1,5 +1,6 @@
 .git
 .venv
 .claude
-*/desktop.ini
 desktop.ini
+__pycache__/
+.ipynb_checkpoints/
