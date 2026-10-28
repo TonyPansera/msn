@@ -1,0 +1,6 @@
+# Simulation (src/model.py)
+numpy>=1.26
+
+# Analysis notebook (analysis.ipynb): plots, Jupyter kernel, JupyterLab and nbconvert
+matplotlib>=3.8
+jupyterlab>=4.0
