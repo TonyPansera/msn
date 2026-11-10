@@ -11,6 +11,8 @@
 \usepackage{graphicx}
 \usepackage[font=small, labelfont=bf, margin=0.5cm]{caption}
 \usepackage{tikz}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \usepackage{microtype}
 \usepackage{csquotes}
 \usepackage[backend=biber, style=numeric-comp, sorting=none, maxbibnames=5, giveninits=true, doi=true, isbn=false, url=false]{biblatex}
@@ -25,6 +27,16 @@
 \newcommand{\Cu}{\mathrm{Cu}}
 \newcommand{\Zn}{\mathrm{Zn}}
 \newcommand{\Tc}{T_\mathrm{c}}
+
+% Pseudocode: blue = measurement run only, orange = equilibration study only
+\definecolor{colA}{RGB}{0,90,170}
+\definecolor{colB}{RGB}{200,80,0}
+\newcommand{\A}[1]{\textcolor{colA}{#1}}
+\newcommand{\B}[1]{\textcolor{colB}{#1}}
+\algrenewcommand\alglinenumber[1]{\footnotesize #1}
+\algdef{SE}[IFA]{IfA}{EndIfA}[1]
+  {\A{\algorithmicif\ #1 \algorithmicthen}}
+  {\A{\algorithmicend\ \algorithmicif}}
 
 \hypersetup{pdftitle={Order-disorder transition of beta-brass (CuZn)}, pdfauthor={Tony Pansera, Noé Fourniol}}
 
@@ -57,12 +69,12 @@ Short-range order survives above $\Tc$.
 $\beta$-brass is the CuZn alloy with about 50\,\% Zn.
 At low temperature it is ordered in the B2 (CsCl-type) structure: the atoms sit on a body-centred cubic (bcc) lattice, Cu on the cube corners and Zn on the cube centres.
 When the temperature rises, Cu and Zn atoms swap places more and more often.
-Around \SI{740}{K} the distinction between the two kinds of sites disappears: the alloy becomes a disordered bcc solid solution~\cite{NixShockley1938,Massalski1990,KhanEisenbach2016}.
-This is a classic order--disorder transition, first described by Bragg and Williams with a mean-field theory~\cite{BraggWilliams1934}.
+Around \SI{740}{K} the distinction between the two kinds of sites disappears: the alloy becomes a disordered bcc solid solution.
+This is a classic order--disorder transition, first described by Bragg and Williams with a mean-field theory.
 
-In this project~\cite{Sujet2026} the atoms do not move away from the lattice sites (\enquote{rigid lattice}): only the occupation of each site by Cu or Zn changes.
+In this project the atoms do not move away from the lattice sites (\enquote{rigid lattice}): only the occupation of each site by Cu or Zn changes.
 The energy is a sum of pair interactions between first and second neighbours.
-We sample the equilibrium configurations with the Metropolis algorithm~\cite{Metropolis1953} and measure how the order is lost when the temperature increases.
+We sample the equilibrium configurations with the Metropolis algorithm and measure how the order is lost when the temperature increases.
 
 % =====================================================================
 \section{Model and method}
@@ -80,7 +92,7 @@ Each site has two neighbour shells (\cref{tab:parameters}): 8 first neighbours a
 The list of these 14 neighbours is built once for every site at the start of the program, applying the periodic boundary conditions (modulo 6 on each cell coordinate).
 This table never changes: only the occupation of the sites does.
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
   \centering
   % B2 (CsCl) cell of CuZn (tikz)
   % Oblique projection: x to the right, y into the page, z up.
@@ -127,7 +139,7 @@ The pair energies are given in \cref{tab:parameters}.
 
 \begin{table}[ht]
   \centering
-  \caption{Neighbour shells and pair energies of the model~\cite{Sujet2026}, in eV. $J$ acts between first neighbours, $I$ between second neighbours. The last column is the \enquote{ordering energy} $w = X_{\Cu\Cu}+X_{\Zn\Zn}-2X_{\Cu\Zn}$ of each shell ($X=J$ or $I$): $w>0$ favours unlike pairs, $w<0$ favours like pairs.}
+  \caption{Neighbour shells and pair energies of the model in eV. $J$ acts between first neighbours, $I$ between second neighbours. The last column is the \enquote{ordering energy} $w = X_{\Cu\Cu}+X_{\Zn\Zn}-2X_{\Cu\Zn}$ of each shell ($X=J$ or $I$): $w>0$ favours unlike pairs, $w<0$ favours like pairs.}
   \label{tab:parameters}
   \begin{tabular}{lcccccc}
     \toprule
@@ -144,49 +156,64 @@ In the B2 structure the 8 first neighbours of every atom are of the other specie
 
 \subsection{Monte Carlo simulation}
 
-\paragraph{Principle.}
-At temperature $T$, a configuration of energy $E$ has the Boltzmann probability $P \propto e^{-E/k_BT}$.
-The mean value of a quantity would be a sum over all the configurations, but there are about $4\times10^{128}$ ways to place 216 Cu atoms on 432 sites, so this sum is out of reach.
-A Monte Carlo simulation replaces it by an average over a sample of configurations drawn at random with the right probabilities.
-The Metropolis algorithm~\cite{Metropolis1953} builds this sample as a chain: from the current configuration it proposes a small random change, and accepts it with the probability
-\begin{equation}
-  P_\mathrm{acc} = \min\left(1, e^{-\Delta E/k_BT}\right),
-  \label{eq:metropolis}
-\end{equation}
-where $\Delta E$ is the energy change of the proposed move.
-A move that lowers the energy is always accepted; a move that raises it is accepted less and less often as $\Delta E/k_BT$ grows.
-This rule satisfies detailed balance, so after a transient the chain visits the configurations with their Boltzmann probabilities, and averages along the chain are thermal averages~\cite{LandauBinder2014}.
+We sample the Boltzmann distribution $P\propto e^{-E/k_BT}$ with the Metropolis algorithm~\cite{HayounDammak2026}, whose main lines are given in \cref{alg:metropolis}.
+Starting from the perfect B2 structure, each step draws a random atom $i$ and one of its 8 first neighbours $j$, computes the energy $E_\mathrm{after}$ after exchanging them, and accepts the exchange with probability $\min\left(1,e^{-(E_\mathrm{after}-E)/k_BT}\right)$; otherwise the configuration is kept.
+One \emph{sweep} is $N=432$ steps, so that every atom is drawn once on average (this is purely our choice to use this number for one sweep, it has no theorical meaning. We explain why in part \ref{sec:measured}).
+The first $n_\mathrm{eq}$ steps are discarded (\cref{sec:equilibration}), then the quantities of \cref{sec:measured} are measured every $m$ steps.
 
-\paragraph{Steps of a run.}
-The composition is fixed, so a move must exchange two atoms rather than change the species of one site (Kawasaki dynamics~\cite{Kawasaki1966}).
-Each temperature is an independent run, made of the following steps:
-\begin{enumerate}\setlength{\itemsep}{0pt}
-  \item \emph{Initialisation.} Start from the perfect B2 structure and compute its energy $E$ with \cref{eq:energy}.
-  \item \emph{Proposed move.} Draw a site $i$ at random among the 432 sites, then one of its 8 first neighbours $j$ at random.
-  \item \emph{Energy change.} If $i$ and $j$ hold the same species, the exchange changes nothing: go to step~5.
-  Otherwise compute $\Delta E$. It only involves the bonds of $i$ and $j$ with their other neighbours (7 first and 6 second neighbours each), because the $i$--$j$ bond itself stays a Cu--Zn bond.
-  This local calculation has 26 bonds instead of the $432\times14/2 = 3024$ bonds of \cref{eq:energy}.
-  \item \emph{Metropolis test.} Accept the exchange with the probability of \cref{eq:metropolis}: if $\Delta E\le0$ it is accepted; otherwise draw a uniform random number $u$ between 0 and 1, and accept if $u\le e^{-\Delta E/k_BT}$.
-  If it is accepted, exchange the two atoms and update the energy, $E\leftarrow E+\Delta E$; if not, keep the configuration as it is.
-  \item \emph{Repetition.} Go back to step~2. Each attempted exchange counts as one Monte Carlo step, accepted or not. A \emph{sweep} is $N=432$ steps, so that every atom is chosen once on average.
-  \item \emph{Equilibration.} Do not measure anything during the first $N_\mathrm{eq}$ steps, while the system moves away from the B2 start (\cref{sec:equilibration}).
-  \item \emph{Measurement.} Then continue for $M$ sweeps and record the quantities of \cref{sec:measured} once per sweep.
-\end{enumerate}
+\begin{algorithm}[ht!]
+\caption{Metropolis. The black lines are common to both versions of the run: the blue lines are the measurement run (quantities recorded every $m$ steps after equilibration), the orange line is the equilibration study (energy recorded after every step).}
+\label{alg:metropolis}
+\begin{algorithmic}[1]
+
+\Require $T$, $n_{\mathrm{eq}}$, \A{$n_{\mathrm{after}}$, $m$ (\texttt{measure\_every})}
+
+\State Initialize the system at $0K$
+\State Compute the initial total energy $E$
+\State Initialize empty lists $energies$\A{, $\eta,\alpha_1,\alpha_2$}
+
+\For{$k=0$ to $n_{\mathrm{eq}}$\A{$+\,n_{\mathrm{after}}$}$-1$}
+
+    \State Randomly select an atom $i$
+    \State Randomly select one of its 8 neighbours $j$
+    \State Compute the energy after the swap $E_{\mathrm{after}}$
+    \State Calculate the acceptance probability:
+    $P \gets \min\left(1,e^{-(E_{\mathrm{after}}-E)/(k_BT)}\right)$
+
+    \If{the swap is accepted with probability $P$}
+        \State Perform the swap between $i$ and $j$
+        \State $E \gets E_{\mathrm{after}}$
+    \EndIf
+
+    \State \B{Append $E$ to $energies$}
+
+    \IfA{$k \geq n_{\mathrm{eq}}$ \textbf{and} $(k-n_{\mathrm{eq}}) \bmod m = 0$}
+        \State \A{Compute $\alpha_1,\alpha_2$ (Cowley) and $|\eta|$}
+        \State \A{Append $E$ to $energies$}
+        \State \A{Append $|\eta|,\alpha_1,\alpha_2$ to their respective lists}
+    \EndIfA
+
+\EndFor
+
+\State \Return $energies$\A{, $\eta,\alpha_1,\alpha_2$}
+
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Measured quantities}
 \label{sec:measured}
 
-After equilibration, we record once per sweep the energy $E$, the long-range order parameter and the two Cowley parameters:
+After equilibration, we record once per sweep the energy $E$, the long-range order parameter and the two Cowley parameters. We chose to record those values every sweep and not every step, as one step might do nothing and it is better to let the system evolve a little bit before sampling any value. This is purely our choice.
 \begin{equation}
   \eta = \frac{N_\Cu^{(\alpha)}-N_\Cu^{(\beta)}}{N_\Cu^{(\alpha)}+N_\Cu^{(\beta)}}, \qquad
   \alpha_n = 1-\frac{p_n^{\Zn|\Cu}}{c_\Zn}\quad (n=1,2),
 \end{equation}
-where $N_\Cu^{(\alpha)}$ is the number of Cu atoms on sublattice $\alpha$, $p_n^{\Zn|\Cu}$ the probability that a neighbour of shell $n$ of a Cu atom is a Zn atom, and $c_\Zn=1/2$~\cite{Cowley1950}.
+Here $N_\Cu^{(\alpha)}$ is the number of Cu atoms on sublattice $\alpha$, $p_n^{\Zn|\Cu}$ the probability that a neighbour of shell $n$ of a Cu atom is a Zn atom, and $c_\Zn=1/2$.
 The perfect B2 order gives $\eta=1$, $\alpha_1=-1$ and $\alpha_2=+1$; a random alloy gives $\eta=\alpha_1=\alpha_2=0$.
 In a finite box the ordered state can also form with Cu on $\beta$ ($\eta<0$), and near $\Tc$ the system goes back and forth between the two.
 We therefore average $|\eta|$, which measures the amount of order whatever its sign.
 
-From the series of $M$ measurements we compute the means $\langle E\rangle$, $\langle|\eta|\rangle$, $\langle\alpha_n\rangle$, and two response functions from the fluctuations~\cite{LandauBinder2014}:
+From the series of measurements we compute the means $\langle E\rangle$, $\langle|\eta|\rangle$, $\langle\alpha_n\rangle$, and two response functions from the fluctuations:
 \begin{equation}
   C_v = \frac{\langle E^2\rangle-\langle E\rangle^2}{k_BT^2},\qquad
   \chi = \frac{N\left(\langle\eta^2\rangle-\langle|\eta|\rangle^2\right)}{k_BT}.
@@ -194,40 +221,16 @@ From the series of $M$ measurements we compute the means $\langle E\rangle$, $\l
 \end{equation}
 $C_v$ is the heat capacity of the whole box (in \si{eV/K}) and $\chi$ the susceptibility of the order parameter (in \si{eV^{-1}}).
 
-\subsection{Simulation conditions}
-
-\Cref{tab:conditions} gathers the conditions of all the calculations of this report.
-
-\begin{table}[ht]
-  \centering
-  \caption{Conditions of all the calculations of this report. The numbers of steps refer to attempted exchanges; 1 sweep $=432$ steps.}
-  \label{tab:conditions}
-  \small
-  \begin{tabularx}{\textwidth}{@{}lX@{}}
-    \toprule
-    Lattice & bcc, $6\times6\times6$ cubic cells, $N=432$ sites, periodic boundary conditions \\
-    Composition & 216 Cu + 216 Zn ($c_\Zn=1/2$), conserved by the moves \\
-    Energy & pair model of \cref{eq:energy}, parameters of \cref{tab:parameters}; $k_B = \SI{8.617333262e-5}{eV/K}$ \\
-    Moves & exchange of a random site with a random first neighbour, Metropolis acceptance \\
-    Starting configuration & perfect B2 (Cu on $\alpha$, Zn on $\beta$) at every temperature \\
-    Equilibration test & \num{200000} steps (\num{463} sweeps) from B2 at each temperature, energy recorded after every step \\
-    Equilibration & $N_\mathrm{eq}=\num{50000}$ steps (\num{116} sweeps), not measured \\
-    Measurement & $M=\num{4000}$ sweeps, one measurement of $E$, $\eta$, $\alpha_1$, $\alpha_2$ per sweep \\
-    Temperatures (K) & 200, 300, 400, 500, 550, 600, 650, 675, 700, 710, 720, 730, 740, 750, 760, 775, 800, 850, 900, 1000, 1200, 1600 \\
-    \bottomrule
-  \end{tabularx}
-\end{table}
-
 % =====================================================================
 \section{Equilibration}
 \label{sec:equilibration}
 
-Every run starts from the perfect B2 structure, which is not representative of a finite temperature.
+Every run starts from the perfect B2 structure, which is not representative of the equilibrium.
 The first steps must be discarded until the system has \enquote{forgotten} this initial state.
 To choose this number of steps, we record the energy after every step during \num{200000} steps at each temperature of the scan (\cref{fig:equilibration}).
 The equilibrium energy $E_\mathrm{eq}$ and the size $\sigma$ of its fluctuations are the mean and standard deviation over the second half of the run; equilibrium is reached at the first step where $E \ge E_\mathrm{eq}-\sigma$.
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
   \centering
   \includegraphics[width=0.7\textwidth]{equilibration_energy.png}
   \caption{Equilibration from the perfect B2 structure: energy per atom during the first 120 sweeps at four temperatures (one value every 50 steps). The dotted line is the B2 energy.}
@@ -244,8 +247,8 @@ We therefore discard $N_\mathrm{eq}=\num{50000}$ steps at every temperature, mor
 \section{Physical quantities and transition temperature}
 \label{sec:results}
 
-At each temperature of \cref{tab:conditions}, we ran the Metropolis algorithm from the B2 structure until equilibrium ($N_\mathrm{eq}$ steps, \cref{sec:equilibration}).
-Once equilibrium was reached, we continued the run for $M=\num{4000}$ sweeps and calculated the physical quantities of \cref{sec:measured} from the recorded series.
+At each temperature tested, we ran the Metropolis algorithm from the B2 structure until equilibrium ($N_\mathrm{eq}$ steps, \cref{sec:equilibration}).
+Once equilibrium was reached, we continued the run for 4000 sweeps and calculated the physical quantities of \cref{sec:measured} from the recorded series.
 All the values are listed in \cref{tab:full}.
 
 \subsection{Evolution with temperature}
@@ -254,7 +257,7 @@ All the values are listed in \cref{tab:full}.
 At \SI{300}{K} the layer is a perfect checkerboard of Cu and Zn.
 Near $\Tc$ the order is only partial, and at \SI{1200}{K} the atoms are spread at random over the two sublattices.
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
   \centering
   \includegraphics[width=\textwidth]{snapshots.png}
   \caption{Final configuration of the runs at three temperatures, seen from above: one layer of the box, with the $\alpha$ sites of height $z=0$ at the grid nodes and the $\beta$ sites of height $z=a/2$ at the centres of the squares ($6\times6$ cells, 72 of the 432 atoms). $|\eta|$ is computed on the whole box.}
@@ -263,14 +266,12 @@ Near $\Tc$ the order is only partial, and at \SI{1200}{K} the atoms are spread a
 
 \paragraph{Energy and heat capacity.}
 The mean energy (\cref{fig:energy}, left) starts from the B2 value and rises steeply between 600 and \SI{800}{K}, where most of the disorder appears.
-At high temperature it tends towards the energy of the ideal random alloy, $E_\mathrm{dis}/N = 4\bar J + 3\bar I = \SI{-2.4455}{eV/atom}$, where $\bar J$ and $\bar I$ are the averages of the pair energies weighted by the probabilities $\frac14,\frac14,\frac12$ of Cu--Cu, Zn--Zn and Cu--Zn pairs.
-Even at \SI{1600}{K} the energy remains \SI{0.0023}{eV/atom} below this value, because of the short-range order discussed below.
 The heat capacity (\cref{fig:energy}, right) has a clear peak at \SI{720}{K}; its value at \SI{700}{K} is almost the same, so the top of the peak is between 700 and \SI{720}{K}.
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
   \centering
   \includegraphics[width=\textwidth]{energy_heat.png}
-  \caption{Left: mean energy per atom versus temperature; the dotted lines are the perfect B2 energy ($-2.484$~eV/atom) and the energy of an ideal random alloy ($-2.4455$~eV/atom).
+  \caption{Left: mean energy per atom versus temperature.
     Right: heat capacity $C_v$ of the box (432 atoms), from the energy fluctuations (\cref{eq:fluctuations}); the dashed line marks its maximum.}
   \label{fig:energy}
 \end{figure}
@@ -280,10 +281,10 @@ $\langle|\eta|\rangle$ (\cref{fig:order}, left) decreases slowly up to about \SI
 This value is not zero because, with only 216 Cu atoms, chance alone puts a few more of them on one sublattice.
 The susceptibility (\cref{fig:order}, right) has a sharp peak at \SI{720}{K}, almost equal to its value at \SI{730}{K}.
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
   \centering
   \includegraphics[width=\textwidth]{order_chi.png}
-  \caption{Left: mean absolute long-range order parameter; the dotted line is the value for random lattices (finite-size floor), the dashed line marks the steepest drop.
+  \caption{Left: mean absolute long-range order parameter; the dotted line is the value for random lattices, the dashed line marks the steepest drop.
     Right: susceptibility of the order parameter from the fluctuations of $|\eta|$ (\cref{eq:fluctuations}); the dashed line marks its maximum.}
   \label{fig:order}
 \end{figure}
@@ -292,7 +293,7 @@ The susceptibility (\cref{fig:order}, right) has a sharp peak at \SI{720}{K}, al
 Below $\Tc$ it is narrow around a large value; above $\Tc$ it is narrow close to zero.
 Near $\Tc$ it is very broad: the system wanders between ordered and disordered states.
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
   \centering
   \includegraphics[width=\textwidth]{eta_hist.png}
   \caption{Histograms of the 4000 values of $|\eta|$ measured (one per sweep) below, near and above the transition. In our box $|\eta|$ can only take the values $2k/216$; each bin contains three of them (width $6/216\approx0.028$).}
@@ -301,13 +302,11 @@ Near $\Tc$ it is very broad: the system wanders between ordered and disordered s
 
 \paragraph{Short-range order.}
 \Cref{fig:cowley} shows the Cowley parameters.
-If the only order were the long-range order, a Cu atom on $\alpha$ would find a Zn neighbour on $\beta$ with probability $(1+\eta)/2$, and a Cu atom on $\beta$ with probability $(1-\eta)/2$.
-Averaging over the two cases gives $\alpha_1=-\eta^2$ and $\alpha_2=+\eta^2$ (dashed lines).
-Below $\Tc$ the Cowley parameters follow these curves: the long-range order explains almost all the local order.
+Below $\Tc$ the Cowley parameters follow the curves of $\eta$: the long-range order explains almost all the local order.
 Above $\Tc$, however, $\langle\eta^2\rangle$ is almost zero while $\alpha_1$ stays clearly negative: at \SI{800}{K}, $\langle\alpha_1\rangle = -0.20$ whereas $-\langle\eta^2\rangle = -0.05$, and at \SI{1600}{K} $\langle\alpha_1\rangle$ is still $-0.07$.
-Cu atoms keep more Zn first neighbours than in a random alloy: this \emph{short-range order} survives the loss of long-range order and fades slowly with temperature, as observed experimentally in ordering alloys~\cite{Moss1964}.
+Cu atoms keep more Zn first neighbours than in a random alloy: this \emph{short-range order} survives the loss of long-range order and fades slowly with temperature, as observed experimentally in ordering alloys. 
 
-\begin{figure}[ht]
+\begin{figure}[ht!]
   \centering
   \includegraphics[width=\textwidth]{cowley.png}
   \caption{Cowley short-range order parameters for the first ($\alpha_1$, circles) and second ($\alpha_2$, squares) neighbour shells.
@@ -323,13 +322,10 @@ The energy, the order parameter and the two response functions all change abrupt
 Each quantity shows it in its own way:
 \begin{itemize}\setlength{\itemsep}{0pt}
   \item \emph{Order parameter.} $\eta$ distinguishes the two sublattices: it is non-zero in the ordered phase and zero in the disordered phase, where $\alpha$ and $\beta$ become equivalent.
-  Its fast drop is the loss of long-range order, which defines the transition. We take as an estimate of $\Tc$ the temperature of the steepest drop (minimum of $\mathrm{d}\langle|\eta|\rangle/\mathrm{d}T$, by finite differences).
+  Its fast drop is the loss of long-range order, which defines the transition.
   \item \emph{Heat capacity.} $C_v = \mathrm{d}\langle E\rangle/\mathrm{d}T$ measures how fast the energy rises with temperature.
-  At the transition, a small increase of $T$ replaces many Cu--Zn first-neighbour pairs by Cu--Cu and Zn--Zn pairs, so the energy rises fast and $C_v$ has a peak.
   \item \emph{Susceptibility.} $\chi$ measures the fluctuations of $\eta$. Its peak shows that the order is the least stable at the transition, where the system wanders between ordered and disordered states (\cref{fig:hist}).
-  These wanderings are also seen in the energy: by \cref{eq:fluctuations}, the peak of $C_v$ is a maximum of the energy fluctuations.
 \end{itemize}
-In an infinite crystal $\eta$ would vanish exactly at $\Tc$, where $C_v$ and $\chi$ would be singular; in our small box the drop is rounded and the peaks are finite.
 
 \Cref{tab:tc} gives the three estimates.
 They fall on the same grid temperature, \SI{720}{K}.
@@ -337,7 +333,7 @@ The grid step is \SI{10}{K} there, but the peaks are flat at the top, between 70
 
 \begin{table}[!ht]
   \centering
-  \caption{Transition temperature. The Monte Carlo values are read on the temperature grid of \cref{tab:conditions} (step \SI{10}{K} between 700 and \SI{760}{K}).}
+  \caption{Transition temperature. The Monte Carlo values are read on the temperature measured (step \SI{10}{K} between 700 and \SI{760}{K}).}
   \label{tab:tc}
   \begin{tabular}{lc}
     \toprule
@@ -347,7 +343,7 @@ The grid step is \SI{10}{K} there, but the peaks are flat at the top, between 70
     Maximum of the susceptibility $\chi$ & 720 \\
     Steepest drop of $\langle|\eta|\rangle$ & 720 \\
     \midrule
-    Experiment ($\beta$-brass)~\cite{NixShockley1938,Massalski1990,KhanEisenbach2016} & $\approx 740$--$750$ \\
+    Experiment ($\beta$-brass)~\cite{Kuper1956} & $\approx 740$ \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -356,25 +352,22 @@ The grid step is \SI{10}{K} there, but the peaks are flat at the top, between 70
 \section{Discussion}
 \label{sec:discussion}
 
-\paragraph{Agreement with experiment.}
-Our estimate of $\Tc$ is close to the experimental value, which is quite good for a model with only six parameters and no adjustment.
-This agreement should not be over-interpreted: the model ignores the vibrations of the atoms, the thermal expansion of the lattice and the difference in size between Cu and Zn.
-For comparison, a rigid-lattice Monte Carlo study of CuZn with energies computed from first principles finds $\Tc\approx\SI{870}{K}$, about \SI{120}{K} above experiment~\cite{KhanEisenbach2016}: a good $\Tc$ is not a proof that every ingredient of the model is right.
+Our estimate of $\Tc$ is close to the experimental value~\cite{Kuper1956}, which is quite good for a model with only six parameters and no adjustment.
 
-\paragraph{Finite size and sampling.}
-The position of the peaks depends on the size of the box: a study with several sizes (for example with the crossing of the Binder cumulant) would give $\Tc$ for an infinite crystal~\cite{LandauBinder2014,BinderHeermann2019}.
-Successive measurements are also correlated, especially near $\Tc$ where the order changes slowly (critical slowing down~\cite{NewmanBarkema1999}).
-$C_v$ and $\chi$ are the noisiest quantities, because they are variances of correlated series: with only 800 sweeps per temperature, a first version of our analysis gave 700, 720 and \SI{730}{K} for the three estimates.
+\paragraph{Order of the transition.}
+In a first-order transition the order parameter and the energy jump at $\Tc$ (latent heat), and the ordered and disordered phases coexist.
+In a second-order transition the order parameter goes to zero continuously, while the heat capacity and the susceptibility diverge.
+Our results look continuous: $\langle|\eta|\rangle$ decreases regularly through $\Tc$ (0.54 at \SI{700}{K}, 0.43 at \SI{720}{K}, 0.31 at \SI{740}{K}, \cref{tab:full}), the energy shows no visible jump, and at \SI{720}{K} the histogram of $|\eta|$ is a single broad hump, not two separated peaks (\cref{fig:hist}).
+This favours a second-order transition, which is the usual description of $\beta$-brass~\cite{Kittel2005}.
+Our box of 432 atoms is too small to be sure of this.
+In a finite box there is no true singularity: a jump of $\eta$ is rounded into a steep but continuous drop, and a divergence is cut into a finite peak (here $C_v^\mathrm{max}\approx\SI{0.06}{eV/K}$ and $\chi^\mathrm{max}\approx\SI{210}{eV^{-1}}$), because near $\Tc$ the correlation length becomes larger than the box.
 
-\paragraph{Algorithm.}
-Exchanging only first neighbours conserves the composition and samples the correct equilibrium distribution, but it is slow to move order over long distances.
-Exchanges between any two sites would equilibrate faster at about the same cost per step.
 
 % =====================================================================
 \section{Conclusion}
 
 We wrote and tested a Metropolis Monte Carlo code for the order--disorder transition of CuZn on a rigid bcc lattice.
-The tests on the perfect B2 structure and on random lattices give the expected values, and the energy updated move by move stays exact.
+The tests on the perfect B2 structure give the expected values.
 The cohesive energy of the B2 phase is \SI{2.484}{eV/atom}.
 Starting from B2, the system needs at most about \num{12000} steps to reach equilibrium, so we discarded \num{50000} steps before measuring during \num{4000} sweeps.
 The energy, the heat capacity, the long-range order parameter and its susceptibility all show the transition at $\Tc \approx \SI{720}{K}$, close to the experimental value (about \SI{740}{K}).
@@ -391,7 +384,7 @@ The main limits of this study are the small size of the box and the simple pair 
 
 \begin{table}[ht]
   \centering
-  \caption{Results of the temperature scan (conditions of \cref{tab:conditions}).
+  \caption{Results of the temperature scan.
     $E$: mean energy per atom (eV); $C_v$: heat capacity of the box (\si{eV/K}); $\chi$: susceptibility (\si{eV^{-1}}).}
   \label{tab:full}
   \small
@@ -438,7 +431,7 @@ The model is written in Python in \texttt{src/model.py} (one module, about 190 l
   \item \texttt{metropolis\_before\_eq(n, T)} returns the energy after each of $n$ steps from B2 (equilibration test); \texttt{metropolis(n\_eq, n\_meas, T, measure\_every)} returns the series of $E$, $|\eta|$, $\alpha_1$, $\alpha_2$ measured after equilibration.
 \end{itemize}
 The analysis notebook \texttt{analysis.ipynb} uses these functions interactively.
-All the figures and tables of this report are produced by \texttt{report/make\_figures.py}, with the parameters of \cref{tab:conditions}.
+All the figures and tables of this report are produced by \texttt{report/make\_figures.py}.
 From the project folder:
 \begin{verbatim}
 python -m venv .venv && .venv/bin/pip install -r requirements.txt

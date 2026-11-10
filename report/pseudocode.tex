@@ -1,0 +1,69 @@
+\documentclass[11pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{xcolor}
+\usepackage{float}
+\usepackage[margin=2.5cm]{geometry}
+
+% Couleurs lisibles
+\definecolor{colA}{RGB}{0,90,170}   % bleu   : metropolis uniquement
+\definecolor{colB}{RGB}{200,80,0}   % orange : metropolis_before_eq uniquement
+
+\newcommand{\A}[1]{\textcolor{colA}{#1}}
+\newcommand{\B}[1]{\textcolor{colB}{#1}}
+
+% Numéros de ligne sans les ":"
+\algrenewcommand\alglinenumber[1]{\footnotesize #1}
+
+% "if ... then ... end if" entièrement en bleu
+\algdef{SE}[IFA]{IfA}{EndIfA}[1]
+  {\A{\algorithmicif\ #1 \algorithmicthen}}
+  {\A{\algorithmicend\ \algorithmicif}}
+
+\begin{document}
+
+\begin{algorithm}[H]
+\caption{Metropolis}
+\begin{algorithmic}[1]
+
+\Require $T$, $n_{\mathrm{eq}}$, \A{$n_{\mathrm{after}}$, $m$ (\texttt{measure\_every})}
+
+\State Initialize the system at $0K$
+\State Compute the initial total energy $E$
+\State Initialize empty lists $energies$\A{, $\eta,\alpha_1,\alpha_2$}
+
+\For{$k=0$ to $n_{\mathrm{eq}}$\A{$+\,n_{\mathrm{after}}$}$-1$}
+
+    \State Randomly select an atom $i$
+    \State Randomly select one of its 8 neighbours $j$
+    \State Compute the energy after the swap $E_{\mathrm{after}}$
+    \State Calculate the acceptance probability:
+    $P \gets \min\left(1,e^{-(E_{\mathrm{after}}-E)/(k_BT)}\right)$
+
+    \If{the swap is accepted with probability $P$}
+        \State Perform the swap between $i$ and $j$
+        \State $E \gets E_{\mathrm{after}}$
+    \EndIf
+
+    \State \B{Append $E$ to $energies$}
+
+    \IfA{$k \geq n_{\mathrm{eq}}$ \textbf{and} $(k-n_{\mathrm{eq}}) \bmod m = 0$}
+        \State \A{Compute $\alpha_1,\alpha_2$ (Cowley) and $|\eta|$}
+        \State \A{Append $E$ to $energies$}
+        \State \A{Append $|\eta|,\alpha_1,\alpha_2$ to their respective lists}
+    \EndIfA
+
+\EndFor
+
+\State \Return $energies$\A{, $\eta,\alpha_1,\alpha_2$}
+
+\end{algorithmic}
+\end{algorithm}
+
+\end{document}
