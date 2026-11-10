@@ -18,8 +18,8 @@ You need **Python 3.10 or newer** and **git**.
 1. Get the project:
 
    ```bash
-   git clone <repository-url>
-   cd <project-folder>
+   git clone https://github.com/TonyPansera/msn
+   cd msn
    ```
 
 2. Create a virtual environment in the project folder and install the packages.
