@@ -1,14 +1,4 @@
 """Simulations, figures and tables of the report and the slides.
-
-Run from the project root:
-    .venv/bin/python -B report/make_figures.py           # simulate once (~6 min), then plot
-    .venv/bin/python -B report/make_figures.py --rerun   # force a new simulation
-
-The raw data are cached in report/figures/data.npz: without --rerun only the
-checks (a few seconds) and the plots are redone. Everything is written in
-report/figures/: figures as 300 dpi PNG, the scan table in scan_table.tex.
-The table is copied inline in report.tex (self-contained for Overleaf), so paste
-it again there after a --rerun.
 """
 import math
 import platform

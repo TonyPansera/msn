@@ -1,0 +1,131 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global/global}
+    \entry{HayounDammak2026}{misc}{}{}
+      \name{author}{2}{}{%
+        {{hash=68329a4e924a299e688bbba742bac13b}{%
+           family={Hayoun},
+           familyi={H\bibinitperiod},
+           given={Marc},
+           giveni={M\bibinitperiod}}}%
+        {{hash=385f01b86be35ece0085b6d8314d9559}{%
+           family={Dammak},
+           familyi={D\bibinitperiod},
+           given={Hichem},
+           giveni={H\bibinitperiod}}}%
+      }
+      \strng{namehash}{c56ac451f28750d504fbcb21c5b589f1}
+      \strng{fullhash}{c56ac451f28750d504fbcb21c5b589f1}
+      \strng{fullhashraw}{c56ac451f28750d504fbcb21c5b589f1}
+      \strng{bibnamehash}{c56ac451f28750d504fbcb21c5b589f1}
+      \strng{authorbibnamehash}{c56ac451f28750d504fbcb21c5b589f1}
+      \strng{authornamehash}{c56ac451f28750d504fbcb21c5b589f1}
+      \strng{authorfullhash}{c56ac451f28750d504fbcb21c5b589f1}
+      \strng{authorfullhashraw}{c56ac451f28750d504fbcb21c5b589f1}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{howpublished}{Course notes 3PN1040, Master Physique M2 QLMN, CentraleSupélec and Université Paris-Saclay}
+      \field{title}{Simulation numérique des ensembles statistiques}
+      \field{year}{2026}
+    \endentry
+    \entry{Kuper1956}{article}{}{}
+      \name{author}{4}{}{%
+        {{hash=4d39edf85d4bef53a73461cd3d4d20c1}{%
+           family={Kuper},
+           familyi={K\bibinitperiod},
+           given={A.\bibnamedelimi B.},
+           giveni={A\bibinitperiod\bibinitdelim B\bibinitperiod}}}%
+        {{hash=4671e6c7cda1c3d2adce0a26013cb264}{%
+           family={Lazarus},
+           familyi={L\bibinitperiod},
+           given={D.},
+           giveni={D\bibinitperiod}}}%
+        {{hash=3f70246b447b923fabc6e1df51fcf33c}{%
+           family={Manning},
+           familyi={M\bibinitperiod},
+           given={J.\bibnamedelimi R.},
+           giveni={J\bibinitperiod\bibinitdelim R\bibinitperiod}}}%
+        {{hash=697780f1ea6bc99fe034f384108ac704}{%
+           family={Tomizuka},
+           familyi={T\bibinitperiod},
+           given={C.\bibnamedelimi T.},
+           giveni={C\bibinitperiod\bibinitdelim T\bibinitperiod}}}%
+      }
+      \strng{namehash}{5e73759257ab3ee0f9df3582b9b35788}
+      \strng{fullhash}{8b3e33fcd6a24910dce2003c6680657d}
+      \strng{fullhashraw}{8b3e33fcd6a24910dce2003c6680657d}
+      \strng{bibnamehash}{8b3e33fcd6a24910dce2003c6680657d}
+      \strng{authorbibnamehash}{8b3e33fcd6a24910dce2003c6680657d}
+      \strng{authornamehash}{5e73759257ab3ee0f9df3582b9b35788}
+      \strng{authorfullhash}{8b3e33fcd6a24910dce2003c6680657d}
+      \strng{authorfullhashraw}{8b3e33fcd6a24910dce2003c6680657d}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{Physical Review}
+      \field{number}{6}
+      \field{title}{Diffusion in Ordered and Disordered Copper-Zinc}
+      \field{volume}{104}
+      \field{year}{1956}
+      \field{pages}{1536\bibrangedash 1541}
+      \range{pages}{6}
+      \verb{doi}
+      \verb 10.1103/PhysRev.104.1536
+      \endverb
+    \endentry
+    \entry{Kittel2005}{book}{}{}
+      \name{author}{1}{}{%
+        {{hash=2c6d8b1aea5118299879670708080fe1}{%
+           family={Kittel},
+           familyi={K\bibinitperiod},
+           given={Charles},
+           giveni={C\bibinitperiod}}}%
+      }
+      \list{location}{1}{%
+        {Hoboken, NJ}%
+      }
+      \list{publisher}{1}{%
+        {John Wiley \& Sons}%
+      }
+      \strng{namehash}{2c6d8b1aea5118299879670708080fe1}
+      \strng{fullhash}{2c6d8b1aea5118299879670708080fe1}
+      \strng{fullhashraw}{2c6d8b1aea5118299879670708080fe1}
+      \strng{bibnamehash}{2c6d8b1aea5118299879670708080fe1}
+      \strng{authorbibnamehash}{2c6d8b1aea5118299879670708080fe1}
+      \strng{authornamehash}{2c6d8b1aea5118299879670708080fe1}
+      \strng{authorfullhash}{2c6d8b1aea5118299879670708080fe1}
+      \strng{authorfullhashraw}{2c6d8b1aea5118299879670708080fe1}
+      \field{sortinit}{4}
+      \field{sortinithash}{9381316451d1b9788675a07e972a12a7}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{edition}{8}
+      \field{isbn}{978-0-471-41526-8}
+      \field{title}{Introduction to Solid State Physics}
+      \field{year}{2005}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+
