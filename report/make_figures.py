@@ -6,7 +6,9 @@ Run from the project root:
 
 The raw data are cached in report/figures/data.npz: without --rerun only the
 checks (a few seconds) and the plots are redone. Everything is written in
-report/figures/.
+report/figures/: figures as 300 dpi PNG, the scan table in scan_table.tex.
+The table is copied inline in report.tex (self-contained for Overleaf), so paste
+it again there after a --rerun.
 """
 import math
 import platform
@@ -67,6 +69,7 @@ plt.rcParams.update({
     "lines.linewidth": 1.5,
     "lines.markersize": 5,
     "legend.frameon": False,
+    "savefig.dpi": 300,
     "savefig.bbox": "tight",
     "savefig.pad_inches": 0.03,
 })
@@ -184,7 +187,7 @@ def analyse(d: dict) -> dict:
     T = d["T"]
     r = {"T": T}
     r["E"] = d["E"].mean(axis=1) / N
-    r["C"] = d["E"].var(axis=1) / (N * (model.kB * T) ** 2)  # C / (N kB)
+    r["C"] = d["E"].var(axis=1) / (model.kB * T ** 2)  # C_v of the whole box, eV/K
     r["eta"] = d["eta"].mean(axis=1)
     r["eta2"] = (d["eta"] ** 2).mean(axis=1)
     r["chi"] = N * d["eta"].var(axis=1) / (model.kB * T)  # eV^-1
@@ -215,19 +218,32 @@ def plot_series(ax, T, y, color, marker="o", label=None):
     ax.plot(T, y, marker + "-", color=color, ms=4.5, mec="white", mew=0.8, label=label)
 
 
-def fig_equilibration(d):
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15 * CM, 5.6 * CM), width_ratios=[1.15, 1])
+def plot_relaxation(ax, d):
+    """Energy per atom during the first sweeps from the B2 start."""
     sweeps = np.arange(d["relax_curves"].shape[1]) * 50 / SWEEP
     for k, (T, curve) in enumerate(zip(d["relax_T"], d["relax_curves"])):
-        ax1.plot(sweeps, curve, color=SERIES[k], lw=1, label=f"{T} K")
-    ax1.axhline(model.J[0][1] * 4, color=MUTED, lw=0.8, ls=":")
-    ax1.annotate("B2 (T = 0 K)", (120, model.J[0][1] * 4), xytext=(0, -9), textcoords="offset points",
-                 ha="right", fontsize=8, color=INK_2)
-    ax1.set_xlim(0, 120)
-    ax1.set_ylim(bottom=model.J[0][1] * 4 - 0.004)
-    ax1.legend(loc="center left", bbox_to_anchor=(1, 0.5), handlelength=1.2)
-    style_axis(ax1, "sweeps from the B2 start", "E / N (eV/atom)")
-    ax1.set_title("Energy from the B2 start", loc="left")
+        ax.plot(sweeps, curve, color=SERIES[k], lw=1, label=f"{T} K")
+    ax.axhline(model.J[0][1] * 4, color=MUTED, lw=0.8, ls=":")
+    ax.annotate("B2 (T = 0 K)", (120, model.J[0][1] * 4), xytext=(0, -9), textcoords="offset points",
+                ha="right", fontsize=8, color=INK_2)
+    ax.set_xlim(0, 120)
+    ax.set_ylim(bottom=model.J[0][1] * 4 - 0.004)
+    ax.legend(loc="center left", bbox_to_anchor=(1, 0.5), handlelength=1.2)
+    style_axis(ax, "sweeps from the B2 start", "E / N (eV/atom)")
+    ax.set_title("Energy from the B2 start", loc="left")
+
+
+def fig_equilibration(d):
+    # Report: energy curves only
+    fig, ax = plt.subplots(figsize=(11 * CM, 5.6 * CM))
+    plot_relaxation(ax, d)
+    fig.tight_layout()
+    fig.savefig(OUT / "equilibration_energy.png")
+    plt.close(fig)
+
+    # Slides: energy curves and steps needed to reach equilibrium
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15 * CM, 5.6 * CM), width_ratios=[1.15, 1])
+    plot_relaxation(ax1, d)
 
     ax2.plot(d["T"], d["n_eq"] / 1000, "o-", color=BLUE, ms=4.5, mec="white", mew=0.8)
     ax2.axhline(N_EQ / 1000, color=INK_2, lw=1, ls="--")
@@ -237,7 +253,7 @@ def fig_equilibration(d):
     style_axis(ax2, "T (K)", r"$n_{eq}$ (10$^3$ steps)")
     ax2.set_title("Steps needed to reach equilibrium", loc="left")
     fig.tight_layout(w_pad=1.5)
-    fig.savefig(OUT / "equilibration.pdf")
+    fig.savefig(OUT / "equilibration.png")
     plt.close(fig)
 
 
@@ -271,7 +287,7 @@ def fig_snapshots(d, r):
                for col, lab in ((CU_COLOR, "Cu"), (ZN_COLOR, "Zn"))]
     fig.legend(handles=handles, loc="lower center", ncols=2, bbox_to_anchor=(0.5, -0.04))
     fig.tight_layout(rect=(0, 0.06, 1, 1))
-    fig.savefig(OUT / "snapshots.pdf")
+    fig.savefig(OUT / "snapshots.png")
     plt.close(fig)
 
 
@@ -288,10 +304,10 @@ def fig_energy_heat(c, r):
 
     plot_series(ax2, r["T"], r["C"], BLUE)
     mark_tc(ax2, r["Tc_C"], f"{r['Tc_C']:.0f} K")
-    style_axis(ax2, "T (K)", r"$C / (N k_B)$")
+    style_axis(ax2, "T (K)", r"$C_v$ (eV/K)")
     ax2.set_title("Heat capacity (energy fluctuations)", loc="left")
     fig.tight_layout(w_pad=1.5)
-    fig.savefig(OUT / "energy_heat.pdf")
+    fig.savefig(OUT / "energy_heat.png")
     plt.close(fig)
 
 
@@ -311,7 +327,7 @@ def fig_order_chi(c, r):
     style_axis(ax2, "T (K)", r"$\chi$ (eV$^{-1}$)")
     ax2.set_title(r"Susceptibility ($|\eta|$ fluctuations)", loc="left")
     fig.tight_layout(w_pad=1.5)
-    fig.savefig(OUT / "order_chi.pdf")
+    fig.savefig(OUT / "order_chi.png")
     plt.close(fig)
 
 
@@ -329,7 +345,7 @@ def fig_cowley(r):
               bbox_to_anchor=(0.01, 0.5), columnspacing=1.2)
     style_axis(ax, "T (K)", "Cowley parameter")
     fig.tight_layout()
-    fig.savefig(OUT / "cowley.pdf")
+    fig.savefig(OUT / "cowley.png")
     plt.close(fig)
 
 
@@ -346,7 +362,7 @@ def fig_eta_hist(d, r):
         ax.grid(axis="y", visible=True)
     axes[0].set_ylabel("number of sweeps")
     fig.tight_layout(w_pad=1)
-    fig.savefig(OUT / "eta_hist.pdf")
+    fig.savefig(OUT / "eta_hist.png")
     plt.close(fig)
 
 
@@ -362,7 +378,7 @@ def write_table(r):
         rows.append(" & ".join([
             f"{T:.0f}",
             number(r["E"][k], 4),
-            number(r["C"][k], 2),
+            number(r["C"][k], 4),
             number(r["eta"][k], 3),
             number(r["chi"][k], 0),
             number(r["a1"][k], 3),
@@ -370,7 +386,7 @@ def write_table(r):
         ]) + r" \\")
     # Whole tabular in the file: \input between two table rows breaks the alignment
     header = [r"\begin{tabular}{rllllll}", r"\toprule",
-              r"$T$ (K) & $\langle E\rangle/N$ & $C/(Nk_B)$ & $\langle|\eta|\rangle$ & $\chi$ "
+              r"$T$ (K) & $\langle E\rangle/N$ & $C_v$ & $\langle|\eta|\rangle$ & $\chi$ "
               r"& $\langle\alpha_1\rangle$ & $\langle\alpha_2\rangle$ \\", r"\midrule"]
     footer = [r"\bottomrule", r"\end{tabular}"]
     (OUT / "scan_table.tex").write_text("\n".join(header + rows + footer) + "\n")
@@ -394,9 +410,9 @@ def write_summary(c, d, r):
               f"  Tc from the susceptibility peak:    {r['Tc_chi']:.0f} K",
               f"  Tc from the steepest drop of |eta|: {r['Tc_eta']:.0f} K",
               f"  Tc Bragg-Williams mean field:       {c['Tc_BW']:.0f} K", ""]
-    lines.append(f"{'T':>6} {'E':>8} {'C':>6} {'|eta|':>6} {'chi':>6} {'a1':>7} {'a2':>7}")
+    lines.append(f"{'T':>6} {'E':>8} {'C_v':>7} {'|eta|':>6} {'chi':>6} {'a1':>7} {'a2':>7}")
     for k, T in enumerate(r["T"]):
-        lines.append(f"{T:6.0f} {r['E'][k]:8.4f} {r['C'][k]:6.3f} {r['eta'][k]:6.3f} {r['chi'][k]:6.1f} "
+        lines.append(f"{T:6.0f} {r['E'][k]:8.4f} {r['C'][k]:7.4f} {r['eta'][k]:6.3f} {r['chi'][k]:6.1f} "
                      f"{r['a1'][k]:+7.3f} {r['a2'][k]:+7.3f}")
     text = "\n".join(lines) + "\n"
     (OUT / "results.txt").write_text(text)

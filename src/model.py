@@ -1,10 +1,8 @@
 import math
-
 import random
 import numpy as np
 
 # Constants of the system for CuZn
-
 L = 6
 NB_SITES = 2 * (L ** 3)
 kB = 8.617333262e-5
@@ -30,10 +28,12 @@ def init_at_t0():
 def site_index(x: int, y: int, z: int, s: int) -> int:
     return 2 * ((x % L) + L * (y % L) + L**2 * (z % L)) + s
 
+# Returns the coordinates (x, y, z, s) of the site with index i in the list
 def site_coords(i: int) -> tuple[int, int, int, int]:
     c = i // 2
     return c % L, (c // L) % L, c // L**2, i % 2
 
+# Returns the list of the 8 first neighbours of site i (the index in the sous_reseau list)
 def get_first_neighbours(i: int) -> list[int]:
     x, y, z, s = site_coords(i)
     if s == 0:
@@ -49,24 +49,26 @@ def get_first_neighbours(i: int) -> list[int]:
                 site_index(x,   y,   z+1, 0), site_index(x+1, y,   z+1, 0),
                 site_index(x,   y+1, z+1, 0), site_index(x+1, y+1, z+1, 0)]
 
+# Returns the list of the 6 second neighbours of site i (the index in the sous_reseau list)
 def get_second_neighbours(i: int) -> list[int]:
     x, y, z, s = site_coords(i)
     return [site_index(x+1, y, z, s), site_index(x-1, y, z, s),
             site_index(x, y+1, z, s), site_index(x, y-1, z, s),
             site_index(x, y, z+1, s), site_index(x, y, z-1, s)]
 
-
+# Returns a random site index in the list
 def choose_random_atom() -> int:
     return random.randint(0, NB_SITES-1)
 
-
+# Precompute the first and second neighbours of each site to avoid recomputing them every time
 FIRST_NEIGHBOURS = [get_first_neighbours(i) for i in range(NB_SITES)]
 SECOND_NEIGHBOURS = [get_second_neighbours(i) for i in range(NB_SITES)]
 
-
+# Returns a random neighbour of site i (the index in the sous_reseau list)
 def choose_random_neighbour(i: int) -> int:
     return FIRST_NEIGHBOURS[i][random.randint(0, len(FIRST_NEIGHBOURS[i]) - 1)]
 
+# Returns the energy of site i with its neighbours
 def get_energy_neighbours(i: int) -> float:
     E = 0   
     for j in FIRST_NEIGHBOURS[i]:
@@ -75,8 +77,7 @@ def get_energy_neighbours(i: int) -> float:
         E += I[sous_reseau[i]][sous_reseau[j]]
     return E
 
-
-
+# Returns the total energy of the system
 def get_full_energy() -> float:
     E = 0
     for i in range(0, NB_SITES):
@@ -106,12 +107,14 @@ def energy_after_flip(E: float, i: int, j: int) -> float:
             delta += I[a][sous_reseau[k]] - I[b][sous_reseau[k]]
     return E + delta
 
+# Returns the probability of flipping the atoms at sites i and j, given their energies before and after the flip and the temperature T
 def flipping_proba(E_i: float, E_j: float, T: float) -> float:
     if E_j > E_i:
         return math.exp(-(1/(kB*T)) * (E_j - E_i))
     else:
         return 1
 
+# Action of flipping (or not) based on the proba
 def flipping_action(P: float, i: int, j: int) -> bool:
     p = random.uniform(0, 1)
     if P == 1 or p <= P:
@@ -119,6 +122,7 @@ def flipping_action(P: float, i: int, j: int) -> bool:
         return True
     return False
 
+# compute the cowley parameters alpha 1 and alpha 2
 def cowley() -> tuple[float, float]:
     nb_zn_1 = 0
     nb_zn_2 = 0
@@ -131,8 +135,10 @@ def cowley() -> tuple[float, float]:
                 if sous_reseau[j] == ZN:
                     nb_zn_2 += 1
     return 1 - (4 * nb_zn_1 / (8 * NB_SITES)), 1 - (4 * nb_zn_2 / (6 * NB_SITES))
-    # We multiply by 4 because we divide by 1/2 with cZn and NB_SITES must be divided by 2 (we only check the Cu proba) so we multiply by 2 instead.
+    # We multiply by 4 because we divide by 1/2 with cZn and NB_SITES must be divided by 2 (we only check the Cu proba) 
+    # so we multiply by 2 instead.
 
+# Compute eta the long range order parameter
 def order_parameter() -> float:
     N_alpha_Cu = np.count_nonzero(sous_reseau[::2] == CU)
     N_beta_Cu = np.count_nonzero(sous_reseau[1::2] == CU)
@@ -162,7 +168,7 @@ def metropolis(n_until_eq: int, n_after_eq: int, T: float, measure_every: int = 
             alpha_2.append(a_2)
     return np.array(energies), np.array(eta), np.array(alpha_1), np.array(alpha_2)
 
-
+# Returns the energy series before equilibrium, for testing purposes
 def metropolis_before_eq(n: int, T: float) -> list[float]:
     init_at_t0()
     energies = []
